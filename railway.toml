@@ -1,0 +1,5 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "pip install uv && uv run main.py"
