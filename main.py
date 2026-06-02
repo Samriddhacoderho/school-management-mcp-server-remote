@@ -5,18 +5,13 @@ from uuid import uuid4
 import os
 import json
 
-# -----------------------------
-# Firebase Initialization
-# -----------------------------
-# Fetch the credentials from an environment variable instead of a raw file
+
 firebase_creds_json = os.environ.get("FIREBASE_CREDENTIALS")
 
 if firebase_creds_json:
-    # Production: Load credentials directly from the string variable
     cred_dict = json.loads(firebase_creds_json)
     cred = credentials.Certificate(cred_dict)
 else:
-    # Fallback for Local Development: reads your local json file
     cred = credentials.Certificate("serviceAccountKey.json")
 
 firebase_admin.initialize_app(
@@ -26,15 +21,9 @@ firebase_admin.initialize_app(
     }
 )
 
-# -----------------------------
-# MCP Server
-# -----------------------------
 mcp = FastMCP("SchoolManagementMCP")
 
 
-# -----------------------------
-# Add Student
-# -----------------------------
 @mcp.tool
 def add_student(
     name: str,
@@ -67,9 +56,6 @@ def add_student(
     }
 
 
-# -----------------------------
-# Get Student
-# -----------------------------
 @mcp.tool
 def get_student(student_id: str):
     """
@@ -84,9 +70,6 @@ def get_student(student_id: str):
     return student
 
 
-# -----------------------------
-# Get All Students
-# -----------------------------
 @mcp.tool
 def get_all_students():
     """
@@ -98,9 +81,6 @@ def get_all_students():
     return students or {}
 
 
-# -----------------------------
-# Update Student
-# -----------------------------
 @mcp.tool
 def update_student(
     student_id: str,
@@ -146,9 +126,6 @@ def update_student(
     }
 
 
-# -----------------------------
-# Mark Fee Paid
-# -----------------------------
 @mcp.tool
 def update_fee_status(student_id: str, fee_paid: bool):
     """
@@ -170,9 +147,6 @@ def update_fee_status(student_id: str, fee_paid: bool):
     }
 
 
-# -----------------------------
-# Get Contact Number
-# -----------------------------
 @mcp.tool
 def get_contact_number(student_id: str):
     """
@@ -190,9 +164,6 @@ def get_contact_number(student_id: str):
     }
 
 
-# -----------------------------
-# Delete Student
-# -----------------------------
 @mcp.tool
 def delete_student(student_id: str):
     """
@@ -214,9 +185,6 @@ def delete_student(student_id: str):
     }
 
 
-# -----------------------------
-# Search Student By Name
-# -----------------------------
 @mcp.tool
 def search_student(name: str):
     """
@@ -243,8 +211,10 @@ def search_student(name: str):
 
 
 if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 9000))
+
     mcp.run(
         transport="http",
         host="0.0.0.0",
-        port=9000,
+        port=port,
     )
