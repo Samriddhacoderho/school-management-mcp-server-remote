@@ -38,13 +38,6 @@ except Exception as e:
 mcp = FastMCP("SchoolManagementMCP")
 
 
-@mcp.custom_route("/health", methods=["GET"])
-async def health_check(request):
-    """Simple liveness probe — returns 200 OK so Railway (and you) can verify the server is up."""
-    from starlette.responses import JSONResponse
-    return JSONResponse({"status": "ok"})
-
-
 @mcp.tool
 def add_student(
     name: str,
@@ -234,8 +227,14 @@ def search_student(name: str):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
 
-    mcp.run(
-        transport="http",
-        host="0.0.0.0",
-        port=port,
-    )
+    try:
+        mcp.run(
+            transport="http",
+            host="0.0.0.0",
+            port=port,
+        )
+    except Exception as e:
+        print(f"[mcp] ERROR: mcp.run() crashed: {e}", flush=True)
+        traceback.print_exc(file=sys.stdout)
+        sys.stdout.flush()
+        sys.exit(1)
