@@ -5,46 +5,48 @@ from uuid import uuid4
 import os
 import json
 import sys
-import traceback
 
+print(f"CWD = {os.getcwd()}", file=sys.stderr)
+print(f"FILE = {__file__}", file=sys.stderr)
 
-# --- Firebase initialization (errors printed before MCP starts) ---
+# -----------------------------
+# Firebase Initialization
+# -----------------------------
+
 firebase_creds_json = os.environ.get("FIREBASE_CREDENTIALS")
 
-try:
-    if firebase_creds_json:
-        print("[firebase] Parsing FIREBASE_CREDENTIALS from environment...", flush=True)
-        cred_dict = json.loads(firebase_creds_json)
-        cred = credentials.Certificate(cred_dict)
-    else:
-        print("[firebase] FIREBASE_CREDENTIALS not set, falling back to serviceAccountKey.json", flush=True)
-        cred = credentials.Certificate("serviceAccountKey.json")
+if firebase_creds_json:
+    # Production: Load credentials from environment variable
+    cred_dict = json.loads(firebase_creds_json)
+    cred = credentials.Certificate(cred_dict)
+else:
+    # Local Development: Load serviceAccountKey.json
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    SERVICE_ACCOUNT_PATH = os.path.join(BASE_DIR, "serviceAccountKey.json")
 
-    firebase_admin.initialize_app(
-        cred,
-        {
-            "databaseURL": "https://school-management-mcp-default-rtdb.firebaseio.com/"
-        }
+    print(
+        f"Using Firebase credentials file: {SERVICE_ACCOUNT_PATH}",
+        file=sys.stderr,
     )
-    print("[firebase] Firebase initialized successfully.", flush=True)
-except Exception as e:
-    print(f"[firebase] ERROR: Firebase initialization failed: {e}", flush=True)
-    traceback.print_exc(file=sys.stdout)
-    sys.stdout.flush()
-    # Exit so Railway surfaces the failure clearly rather than running a broken server
-    sys.exit(1)
-# ------------------------------------------------------------------
 
+    cred = credentials.Certificate(SERVICE_ACCOUNT_PATH)
+
+firebase_admin.initialize_app(
+    cred,
+    {
+        "databaseURL": "https://school-management-mcp-default-rtdb.firebaseio.com/"
+    },
+)
+
+# -----------------------------
+# MCP Server
+# -----------------------------
 mcp = FastMCP("SchoolManagementMCP")
 
 
-@mcp.custom_route("/health", methods=["GET"])
-async def health_check(request):
-    """Simple liveness probe — returns 200 OK so Railway (and you) can verify the server is up."""
-    from starlette.responses import JSONResponse
-    return JSONResponse({"status": "ok"})
-
-
+# -----------------------------
+# Add Student
+# -----------------------------
 @mcp.tool
 def add_student(
     name: str,
@@ -77,6 +79,9 @@ def add_student(
     }
 
 
+# -----------------------------
+# Get Student
+# -----------------------------
 @mcp.tool
 def get_student(student_id: str):
     """
@@ -91,6 +96,9 @@ def get_student(student_id: str):
     return student
 
 
+# -----------------------------
+# Get All Students
+# -----------------------------
 @mcp.tool
 def get_all_students():
     """
@@ -102,6 +110,9 @@ def get_all_students():
     return students or {}
 
 
+# -----------------------------
+# Update Student
+# -----------------------------
 @mcp.tool
 def update_student(
     student_id: str,
@@ -147,6 +158,9 @@ def update_student(
     }
 
 
+# -----------------------------
+# Mark Fee Paid
+# -----------------------------
 @mcp.tool
 def update_fee_status(student_id: str, fee_paid: bool):
     """
@@ -168,6 +182,9 @@ def update_fee_status(student_id: str, fee_paid: bool):
     }
 
 
+# -----------------------------
+# Get Contact Number
+# -----------------------------
 @mcp.tool
 def get_contact_number(student_id: str):
     """
@@ -185,6 +202,9 @@ def get_contact_number(student_id: str):
     }
 
 
+# -----------------------------
+# Delete Student
+# -----------------------------
 @mcp.tool
 def delete_student(student_id: str):
     """
@@ -206,6 +226,9 @@ def delete_student(student_id: str):
     }
 
 
+# -----------------------------
+# Search Student By Name
+# -----------------------------
 @mcp.tool
 def search_student(name: str):
     """
@@ -232,10 +255,4 @@ def search_student(name: str):
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-
-    mcp.run(
-        transport="http",
-        host="0.0.0.0",
-        port=port,
-    )
+    mcp.run(transport="http", host="0.0.0.0", port=9000)
