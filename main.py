@@ -211,7 +211,7 @@ def search_student(name: str):
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 9000))
+    port = int(os.environ.get("PORT", 8080))
 
     mcp.run(
         transport="http",
