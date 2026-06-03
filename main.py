@@ -4,24 +4,45 @@ from firebase_admin import credentials, db
 from uuid import uuid4
 import os
 import json
+import sys
+import traceback
 
 
+# --- Firebase initialization (errors printed before MCP starts) ---
 firebase_creds_json = os.environ.get("FIREBASE_CREDENTIALS")
 
-if firebase_creds_json:
-    cred_dict = json.loads(firebase_creds_json)
-    cred = credentials.Certificate(cred_dict)
-else:
-    cred = credentials.Certificate("serviceAccountKey.json")
+try:
+    if firebase_creds_json:
+        print("[firebase] Parsing FIREBASE_CREDENTIALS from environment...", flush=True)
+        cred_dict = json.loads(firebase_creds_json)
+        cred = credentials.Certificate(cred_dict)
+    else:
+        print("[firebase] FIREBASE_CREDENTIALS not set, falling back to serviceAccountKey.json", flush=True)
+        cred = credentials.Certificate("serviceAccountKey.json")
 
-firebase_admin.initialize_app(
-    cred,
-    {
-        "databaseURL": "https://school-management-mcp-default-rtdb.firebaseio.com/"
-    }
-)
+    firebase_admin.initialize_app(
+        cred,
+        {
+            "databaseURL": "https://school-management-mcp-default-rtdb.firebaseio.com/"
+        }
+    )
+    print("[firebase] Firebase initialized successfully.", flush=True)
+except Exception as e:
+    print(f"[firebase] ERROR: Firebase initialization failed: {e}", flush=True)
+    traceback.print_exc(file=sys.stdout)
+    sys.stdout.flush()
+    # Exit so Railway surfaces the failure clearly rather than running a broken server
+    sys.exit(1)
+# ------------------------------------------------------------------
 
 mcp = FastMCP("SchoolManagementMCP")
+
+
+@mcp.custom_route("/health", methods=["GET"])
+async def health_check(request):
+    """Simple liveness probe — returns 200 OK so Railway (and you) can verify the server is up."""
+    from starlette.responses import JSONResponse
+    return JSONResponse({"status": "ok"})
 
 
 @mcp.tool
