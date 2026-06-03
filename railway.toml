@@ -1,5 +1,5 @@
 [build]
-builder = "NIXPACKS"
+builder = "RAILPACK"
 
 [deploy]
-startCommand = "pip install uv && uv run main.py"
+startCommand = "uv run main.py"
